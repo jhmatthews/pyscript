@@ -1,0 +1,42 @@
+*.py[co]
+
+# IPython notebooks
+*.ipynb
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+
+#py.test directory
+__pycache__
+htmlcov
+
+#Translations
+*.mo
+
+#Mr Developer
+.mr.developer.cfg
+
+# Python packaging
+MANIFEST
+
+# Generated docs stuff
+docs/**/*.png
+docs/_build
+docs/**/index.md

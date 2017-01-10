@@ -1,0 +1,194 @@
+#!/usr/bin/env python3.5
+from pylab import * 
+import numpy as np 
+import os, sys
+import pretty as pr 
+
+'''
+aglplot.py
+
+aglplot.py contains a number of plotting routines for deadling
+with outputs from the MH3D code.
+'''
+
+
+cm_use = pr.get_viridis()
+
+def slice_plot(run_name, use_string=None, n=21):
+	'''
+	make a slice plot of a given quantity. 
+	The quantity in question is controlled by the use_string.
+
+	Parameters:
+		use_string 	string 
+					string to plot, e.g. xy_B is the B field
+					in an xy slice.
+		n 			int
+					number of plots to go up to 
+
+	Returns: 0
+	'''
+
+	# get all the agl folders in the run directory
+	folders = os.listdir(run_name)
+
+	# make a folder to store plots 
+	os.system("mkdir slices_{}".format(run_name))
+
+	for i in range(n):
+
+		folder="agl{}".format(i)
+
+		folder_path = "{}/{}/".format(run_name, folder)
+
+		print(folder)  
+
+		files = os.listdir(folder_path)
+
+		for j, f in enumerate(files):
+
+			if use_string!=None:
+				if use_string in f:
+
+					fname = "{}{}".format(folder_path,f)
+
+					d = np.loadtxt(fname )
+
+					print(np.mean(d))
+
+
+					imshow(d, cmap = cm_use)
+					colorbar()
+
+					savefig("slices_{}/t{}{}.png".format(run_name, i,f), dpi=300)
+					clf()
+	return 0
+
+def make_movie(fname="test", use_string = "xy_B", fps = 3):
+	'''
+	make a movie!
+	command is e.g.
+	ffmpeg -r 3 -i t%dxy_B.agl.png -vcodec libx264 -crf 25  -pix_fmt yuv420p test.mp4
+	'''
+
+	cmd = "ffmpeg -r {} -i t%d{}.agl.png -vcodec libx264 -crf 25  -pix_fmt yuv420p {}.mp4".format(fps, use_string, fname)	
+
+	isys = os.system(cmd)
+
+	return isys
+
+def over_time(run_names, n=11, func=np.max,var="B"):
+
+	pr.set_pretty()
+
+	for irun, run_name in enumerate(run_names):
+
+		# get all the agl folders in the run directory
+		folders = [f for f in os.listdir(run_name) if "agl" in f]
+
+		y = np.zeros(n)
+
+		for i in range(n):
+
+			folder="agl{}".format(i)
+
+			folder_path = "{}/{}/".format(run_name, folder)
+
+			print(folder_path)  
+
+			files = os.listdir(folder_path)
+
+			slice_values = []
+
+			for j, f in enumerate(files):
+
+				if var in f:
+
+					fname = "{}{}".format(folder_path,f)
+
+					d = np.loadtxt(fname)
+
+					slice_values.append(func(d))
+
+			y[i] = func(np.array(slice_values))
+
+
+		dt = 2
+		times = np.arange(0,n*dt, dt)
+		plot(times, y, linewidth=2)
+
+
+	xlabel("t")
+	ylabel("")
+	semilogy()
+	savefig("{}_over_time.png".format(var), dpi=300)
+
+	return 0
+
+
+def physical(fname):
+
+	import astropy.io.ascii as io 
+	import pretty
+
+	os.system("sed -i -e 's/agl/# agl/g' {}".format(fname) )
+	os.system("sed -i -e 's/it/# it/g' {}".format(fname) )
+	os.system("sed -i -e 's/xy/# xy/g' {}".format(fname) )
+	os.system("sed -i -e 's/xz/# xz/g' {}".format(fname) )
+	os.system("sed -i -e 's/yz/# yz/g' {}".format(fname) )
+
+	data = io.read(fname)
+
+	t = data["time"]
+
+	labels = ["b","ke","thermal"]
+
+	pretty.set_pretty()
+	for l in labels:
+		plot(t, data[l], label=l, linewidth=2)
+
+	semilogy()
+	pretty.float_legend(loc=2)
+	xlabel("t")
+	ylabel("E")
+
+	savefig("physical.png", dpi=300)
+
+	return 0
+
+
+if __name__ == "__main__":
+
+	mode = sys.argv[1]
+
+	if mode == "slice":
+
+		for j in range(2, len(sys.argv[:-1])):
+
+			run_name = sys.argv[j]
+
+			# make the slice plots
+			use_string=sys.argv[-1]
+
+			if use_string == "all":
+				slice_plot(run_name, use_string=None)
+			else:
+				slice_plot(run_name, use_string=use_string)
+
+	elif mode == "mov":
+
+		# combine plots into movie with 3 frames per second
+		make_movie(fname = "test", use_string=use_string, fps=3)
+
+	elif mode == "t":
+
+		run_names = sys.argv[2:]
+		over_time(run_names)
+
+	elif mode == "p":
+
+		fname = sys.argv[2]
+
+		physical(fname)
+
+

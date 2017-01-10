@@ -1,0 +1,4 @@
+[run]
+branch = False
+source = brewer2mpl
+omit = *test_*.py

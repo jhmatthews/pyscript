@@ -1,0 +1,8 @@
+#!/bin/sh
+
+fname=$1
+
+sed -i -e -n '/agl/,$p' $1
+sed -i -e -n '/it/,$p' $1
+awk 'NR==1,/it/{sub(/it/, "i")} 1' $1 > temp.out
+mv temp.out $1
